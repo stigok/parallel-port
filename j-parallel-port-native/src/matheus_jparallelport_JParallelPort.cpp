@@ -25,7 +25,7 @@
 
 #include "matheus_jparallelport_JParallelPort.h"
 #include <ParallelPort.h>
-#include <vector>
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <cstdlib>
@@ -43,16 +43,17 @@ struct JParallelPort
 	}
 };
 
-typedef vector<JParallelPort*> JParallelPortInstances;
+typedef map<int, JParallelPort*> JParallelPortInstances;
 
 static JParallelPortInstances instances;
 
 JNIEXPORT void JNICALL Java_matheus_jparallelport_JParallelPort_nConstruct(
 		JNIEnv *, jobject, jint instanceID)
 {
-	if (instances.size() == (size_t) instanceID)
+	//pointer reference that ins't exists eat
+	if (instances[instanceID] == NULL)
 	{
-		instances.push_back(new JParallelPort());
+		instances[instanceID] = new JParallelPort();
 	}
 }
 
@@ -62,7 +63,7 @@ JNIEXPORT void JNICALL Java_matheus_jparallelport_JParallelPort_nDestruct(
 	if ((size_t) instanceID < instances.size() && instances[instanceID] != NULL)
 	{
 		delete instances[instanceID];
-		instances[instanceID] = NULL;
+		instances.erase(instanceID);
 	}
 }
 
