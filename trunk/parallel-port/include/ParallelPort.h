@@ -42,11 +42,13 @@
  */
 class ParallelPort
 {
-#ifdef __linux //linux specific attributes
+#if defined(__linux) //linux specific attributes
 	int fd;
 	std::string parportPath;
+#elif defined(_WIN32) //win32 specific attributes
+	short dataPortAddr, controlPortAddr, statusPortAddr;
+#endif
 	bool _isOpen;
-#endif //end linux specific attributes
 public:
 	ParallelPort();
 	/**

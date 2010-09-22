@@ -24,8 +24,15 @@
  */
 #ifdef _WIN32
 
-
+#include <cstdlib>
+#include <string>
+#include <sstream>
 #include <windows.h>
+#include <ParallelPort.h>
+
+#include <iostream>
+#include <cstdio>
+
 typedef short (_stdcall *Win32InpOut32DLLInput)(short portaddr);
 typedef void (_stdcall *Win32InpOut32DLLOutput)(short portaddr, short data);
 
@@ -33,40 +40,88 @@ static HINSTANCE win32HandleInstance;
 static Win32InpOut32DLLInput win32Input;
 static Win32InpOut32DLLOutput win32Ouput;
 
-#include <ParallelPort.h>
-#include <cstdlib>
-#include <string>
-#include <sstream>
-
 using namespace std;
+
+static const short BASE_PORT_ADDR = 0x378;
+static size_t portsOpened = 0;
+
+ParallelPort::ParallelPort() :
+	_isOpen(false)
+{
+
+}
 
 void ParallelPort::open(short port) throw (std::runtime_error)
 {
+	dataPortAddr = BASE_PORT_ADDR + (port * 3);
+	statusPortAddr = dataPortAddr + 1;
+	controlPortAddr = dataPortAddr + 2;
 
+	/* Load the library */
+	win32HandleInstance = LoadLibrary("inpout32.dll");
+
+	if (win32HandleInstance == NULL)
+	{
+		throw runtime_error("Unable to LoadLibrary inpout32.dll");
+	}
+
+	/* get the address of the Inp32/Out32 functions */
+	win32Input = (Win32InpOut32DLLInput) GetProcAddress(win32HandleInstance,
+			"Inp32");
+
+	if (win32Input == NULL)
+	{
+		throw runtime_error("Unable to GetProcAddress for Inp32");
+	}
+
+	win32Ouput = (Win32InpOut32DLLOutput) GetProcAddress(win32HandleInstance,
+			"Out32");
+
+	if (win32Ouput == NULL)
+	{
+		throw runtime_error("Unable to GetProcAddress for Out32");
+	}
+	_isOpen = true;
+	portsOpened++;
 }
+
+bool ParallelPort::isOpen()
+{
+	return _isOpen;
+}
+
 void ParallelPort::close()
 {
-
+	if (_isOpen)
+	{
+		_isOpen = false;
+		portsOpened--;
+		if (portsOpened == 0)
+		{
+			//FreeLibrary(win32HandleInstance);
+		}
+	}
 }
 char ParallelPort::readData() throw (std::runtime_error)
 {
-
+	return (char) (win32Input)(dataPortAddr);
 }
 char ParallelPort::readControl() throw (std::runtime_error)
 {
-
+	return (char) (win32Input)(controlPortAddr);
 }
 char ParallelPort::readStatus() throw (std::runtime_error)
 {
-
+	return (char) win32Input(statusPortAddr);
 }
 void ParallelPort::writeData(char value) throw (std::runtime_error)
 {
-
+	printf("dataPortAddr t: %x\n", dataPortAddr);
+	(win32Ouput)(dataPortAddr, (short) value);
 }
 void ParallelPort::writeControl(char value) throw (std::runtime_error)
 {
-
+	(win32Ouput)(controlPortAddr, (short) value);
 }
 
 #endif
