@@ -30,9 +30,6 @@
 #include <windows.h>
 #include <ParallelPort.h>
 
-#include <iostream>
-#include <cstdio>
-
 typedef short (_stdcall *Win32InpOut32DLLInput)(short portaddr);
 typedef void (_stdcall *Win32InpOut32DLLOutput)(short portaddr, short data);
 
@@ -98,7 +95,7 @@ void ParallelPort::close()
 		portsOpened--;
 		if (portsOpened == 0)
 		{
-			//FreeLibrary(win32HandleInstance);
+			FreeLibrary(win32HandleInstance);
 		}
 	}
 }
@@ -116,7 +113,6 @@ char ParallelPort::readStatus() throw (std::runtime_error)
 }
 void ParallelPort::writeData(char value) throw (std::runtime_error)
 {
-	printf("dataPortAddr t: %x\n", dataPortAddr);
 	(win32Ouput)(dataPortAddr, (short) value);
 }
 void ParallelPort::writeControl(char value) throw (std::runtime_error)
